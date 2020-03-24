@@ -1,0 +1,78 @@
+# Phenology {#phen}
+
+```{r, echo=FALSE, fig.show=TRUE, fig.width=8, fig.height=10, fig.cap="Figure 1: Departure and arrival dates of tracked Curlew sandpipers (left) and Red-necked stints (right). Dep1 = departure at tag deployment site; Arr1 = arrival at breeding site; Dep2 = departure from breeding site; Arr2 = arrival at tag deployment site."} 
+
+library(xtable)
+library(knitr)
+cs <- readxl::read_xlsx("~/Dropbox/Science/Projects/VWSG/TagData/TagData_CurSand.xlsx", sheet = "Analyses")[,c("Flag", "GeoID", "Species", "Location", "Year", "Departure1", "Arrival1", "Departure2", "Arrival2")]
+names(cs) <- c("Flag", "GeoID", "Species", "Location", "Year", "Depart1", "Arrival1", "Depart2", "Arrival2")
+
+rns <- readxl::read_xlsx("~/Dropbox/Science/Projects/VWSG/TagData/TagData_RNS.xlsx", sheet = "Analyses")[,c("Flag", "GeoID", "Species", "Location", "Year", "Departure1", "Arrival1", "Departure2", "Arrival2")]
+names(rns) <- c("Flag", "GeoID", "Species", "Location", "Year", "Depart1", "Arrival1", "Depart2", "Arrival2")
+
+
+phen <- rbind(data.frame(sp = "cs", type = as.factor(rep(1:4, each = nrow(cs))), id = rep(1:nrow(cs), 4), 
+                date = as.POSIXct(ifelse(do.call("c", cs[,6:9])=="NA", NA, 
+                    paste(do.call("c", cs[,5]), do.call("c", cs[,6:9]), sep = "-")), tz = "GMT")),   
+              data.frame(sp = "rns", type = as.factor(rep(1:4, each = nrow(rns))), id = rep(1:nrow(rns), 4),  
+                   date = as.POSIXct(ifelse(do.call("c", rns[,6:9])=="NA", NA, 
+                        paste(do.call("c", rns[,5]), do.call("c", rns[,6:9]), sep = "-")), tz = "GMT")))
+row.names(phen) <- 1:nrow(phen)
+phen$doy <- as.numeric(format(phen$date, "%j"))
+
+
+opar <- par(mfcol = c(3,2), bty = "n", oma = c(1,3,0,0))
+plot(NA, xlim = c(0.5, 2.5), ylim = range(phen$doy[phen$type%in%c(1:2)], na.rm = T), 
+     las = 1, bty = "n", xaxt = "n", ylab = "", xlab = "")
+points(phen[phen$sp=="cs" & phen$type%in%c(1:2), c("type", "doy")], pch = 16, col = "grey60")
+segments(1, phen[phen$sp=="cs" & phen$type==1,"doy"], 2, phen[phen$sp=="cs" & phen$type==2,"doy"], col = "grey60")
+with(phen[phen$sp=="cs" & phen$type%in%c(1:2), c("type", "doy")], 
+     boxplot(doy~type, add = T, xaxt = "n", yaxt = "n", xlab = "n", ylab = "n", col = "transparent"))
+axis(1, at = c(1,2), labels = c("Dep1", "Arr1"))
+mtext("Curlew sandpiper", 3, cex = 1.2)
+     
+plot(NA, xlim = c(1.5, 3.5), ylim = range(phen$doy[phen$type%in%c(2:3)], na.rm = T), 
+     las = 1, bty = "n", xaxt = "n", ylab = "", xlab = "")
+points(phen[phen$sp=="cs" & phen$type%in%c(2:3), c("type", "doy")], pch = 16, col = "grey60")
+segments(2, phen[phen$sp=="cs" & phen$type==2,"doy"], 3, phen[phen$sp=="cs" & phen$type==3,"doy"], col = "grey60")
+with(phen[phen$sp=="cs" & phen$type%in%c(2:3), c("type", "doy")], 
+     boxplot(doy~type, add = T, xaxt = "n", yaxt = "n", xlab = "n", ylab = "n", col = "transparent"))
+axis(1, at = c(2,3), labels = c("Arr1", "Dep2"))
+
+plot(NA, xlim = c(2.5, 4.5), ylim = range(phen$doy[phen$type%in%c(3:4)], na.rm = T), 
+     las = 1, bty = "n", xaxt = "n", ylab = "", xlab = "")
+points(phen[phen$sp=="cs" & phen$type%in%c(3:4), c("type", "doy")], pch = 16, col = "grey60")
+segments(3, phen[phen$sp=="cs" & phen$type==3,"doy"], 4, phen[phen$sp=="cs" & phen$type==4,"doy"], col = "grey60")
+with(phen[phen$sp=="cs" & phen$type%in%c(3:4), c("type", "doy")], 
+     boxplot(doy~type, add = T, xaxt = "n", yaxt = "n", xlab = "n", ylab = "n", col = "transparent"))
+axis(1, at = c(3,4), labels = c("Dep2", "Arr2"))
+
+plot(NA, xlim = c(0.5, 2.5), ylim = range(phen$doy[phen$type%in%c(1:2)], na.rm = T), 
+     las = 1, bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "")
+points(phen[phen$sp=="rns" & phen$type%in%c(1:2), c("type", "doy")], pch = 16, col = "grey60")
+segments(1, phen[phen$sp=="rns" & phen$type==1,"doy"], 2, phen[phen$sp=="rns" & phen$type==2,"doy"], col = "grey60")
+with(phen[phen$sp=="rns" & phen$type%in%c(1:2), c("type", "doy")], 
+     boxplot(doy~type, add = T, xaxt = "n", yaxt = "n", xlab = "n", ylab = "n", col = "transparent"))
+axis(1, at = c(1,2), labels = c("Dep1", "Arr1"))
+mtext("Red-necked stint", 3, cex = 1.2)
+
+plot(NA, xlim = c(1.5, 3.5), ylim = range(phen$doy[phen$type%in%c(2:3)], na.rm = T), 
+     las = 1, bty = "n", xaxt = "n", ylab = "", xlab = "")
+points(phen[phen$sp=="rns" & phen$type%in%c(2:3), c("type", "doy")], pch = 16, col = "grey60")
+segments(2, phen[phen$sp=="rns" & phen$type==2,"doy"], 3, phen[phen$sp=="rns" & phen$type==3,"doy"], col = "grey60")
+with(phen[phen$sp=="rns" & phen$type%in%c(2:3), c("type", "doy")], 
+     boxplot(doy~type, add = T, xaxt = "n", yaxt = "n", xlab = "n", ylab = "n", col = "transparent"))
+axis(1, at = c(2,3), labels = c("Arr1", "Dep2"))
+
+plot(NA, xlim = c(2.5, 4.5), ylim = range(phen$doy[phen$type%in%c(3:4)], na.rm = T), 
+     las = 1, bty = "n", xaxt = "n", ylab = "", xlab = "", yaxt = "n")
+points(phen[phen$sp=="rns" & phen$type%in%c(3:4), c("type", "doy")], pch = 16, col = "grey60")
+segments(3, phen[phen$sp=="rns" & phen$type==3,"doy"], 4, phen[phen$sp=="rns" & phen$type==4,"doy"], col = "grey60")
+with(phen[phen$sp=="rns" & phen$type%in%c(3:4), c("type", "doy")], 
+     boxplot(doy~type, add = T, xaxt = "n", yaxt = "n", xlab = "n", ylab = "n", col = "transparent"))
+axis(1, at = c(3,4), labels = c("Dep2", "Arr2"))
+
+mtext("Day of the year", 2, cex = 1.4, outer = T)
+
+par(opar)
+```

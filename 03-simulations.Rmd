@@ -1,0 +1,15 @@
+# Simuations {#sim}
+
+Red = Curlew sandpiper; Orange = Red-necked stint
+
+## Northward migration
+
+```{r fig.align='center', echo=FALSE}
+knitr::include_graphics(path="images/Northward.gif")
+```
+
+## Southward migration
+
+```{r fig.align='center', echo=FALSE}
+knitr::include_graphics(path="images/Southward.gif")
+```

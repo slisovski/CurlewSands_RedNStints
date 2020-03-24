@@ -1,0 +1,23 @@
+# Tag info {#tags}
+
+## Curlew sandpiper
+
+```{r, echo = FALSE, results = "asis"}
+library(xtable)
+library(knitr)
+cs <- readxl::read_xlsx("~/Dropbox/Science/Projects/VWSG/TagData/TagData_CurSand.xlsx", sheet = "Analyses")[,c("Flag", "GeoID", "Species", "Location", "Year", "Departure1", "Arrival1", "Departure2", "Arrival2")]
+names(cs) <- c("Flag", "GeoID", "Species", "Location", "Year", "Depart1", "Arrival1", "Depart2", "Arrival2")
+
+kable(cs, caption = "Table 1: Succesfully tracked Curlew sandpipers.")
+```
+
+## Red-necked stint
+
+```{r, echo = FALSE, results = "asis"}
+library(xtable)
+library(knitr)
+rns <- readxl::read_xlsx("~/Dropbox/Science/Projects/VWSG/TagData/TagData_RNS.xlsx", sheet = "Analyses")[,c("Flag", "GeoID", "Species", "Location", "Year", "Departure1", "Arrival1", "Departure2", "Arrival2")]
+names(rns) <- c("Flag", "GeoID", "Species", "Location", "Year", "Depart1", "Arrival1", "Depart2", "Arrival2")
+
+kable(rns, caption = "Table 2: Succesfully tracked Red-necked stints.")
+```
