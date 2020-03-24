@@ -1,10 +1,101 @@
+---
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
 # Migration strategy {#strategy}
 
 Plan:
 * bout length
 * staging time distribution
-* nr. stoppover sites
 
-```{r}
+## Number of stopover sites
 
+```{r, echo = FALSE, fig.show=T, fig.width=7, fig.height=7}
+library(geosphere)
+
+flsCS <- list.files("~/Deakin University/Marcel Klaassen - Klaassen-Lab/Geolocation/Results/CurlewSandpiper", 
+                                                    pattern = "*_Grouped_movementSummary.csv", full.names = T)
+
+
+flsRNS <- list.files("~/Deakin University/Marcel Klaassen - Klaassen-Lab/Geolocation/Results/RedNeckedStint", 
+                                                    pattern = "*_Grouped_movementSummary.csv", full.names = T)
+
+csOut <- do.call("rbind", lapply(flsCS, function(x) {
+    sm <- read.csv(x)
+    sm$start <- as.numeric(as.POSIXct(sm$StartTime, tz = "GMT"))
+    sm$end   <- as.numeric(as.POSIXct(sm$EndTime, tz = "GMT"))
+    
+    ssm <- subset(sm, Days>1, select = c("Days", "Type", "Lon.50.", "Lat.50."))
+    ssm$Dist <- c(NA, apply(cbind(ssm[-nrow(ssm),3:4], ssm[-1,3:4]), 1, function(x) distVincentySphere(x[1:2], x[3:4])/1000))
+    
+    data.frame(id = unlist(lapply(x, function(y) unlist(strsplit(unlist(strsplit(y, "/"))[9], "_"))[1])), ssm[,c("Days", "Type", "Dist")])
+    }) )
+
+rnsOut <- do.call("rbind", lapply(flsRNS, function(x) {
+    sm <- read.csv(x)
+    sm$start <- as.numeric(as.POSIXct(sm$StartTime, tz = "GMT"))
+    sm$end   <- as.numeric(as.POSIXct(sm$EndTime, tz = "GMT"))
+    
+    if(!any(sm$Type==2)) {
+      tmp <- sm[max(which(sm$Type==1)),]
+      tmp$start <- tmp$start + 2*60*60
+      tmp$Type <- 2
+      tmp$Days <- 2
+      tmp$Lon.50. <- 119.6793
+      tmp$Lat.50. <- 70.60185
+      sm <- rbind(sm, tmp)
+      sm <- sm[order(sm$start),]
+    }
+    
+    ssm <- subset(sm, Days>1, select = c("Days", "Type", "Lon.50.", "Lat.50."))
+    ssm$Dist <- c(NA, apply(cbind(ssm[-nrow(ssm),3:4], ssm[-1,3:4]), 1, function(x) distVincentySphere(x[1:2], x[3:4])/1000))
+    
+    data.frame(id = unlist(lapply(x, function(y) unlist(strsplit(unlist(strsplit(y, "/"))[9], "_"))[1])), ssm[,c("Days", "Type", "Dist")])
+    }) )
+
+
+csSites <- aggregate(csOut$Type, by = list(csOut$id), FUN = function(x) c(sum(x==1), sum(x==3)))
+rnSites <- aggregate(rnsOut$Type, by = list(rnsOut$id), FUN = function(x) c(sum(x==1), sum(x==3)))
+  rnSites <- rnSites[rnSites$x[,1]>0,]
+  
+opar <- par(mfcol = c(2, 3), mar = c(3,6,1,1), oma = c(0,0,0,3))
+
+plot(NA, xlim = c(0.5, 2.5), ylim = c(1,8), xaxt = "n", las = 1, xlab = "", ylab = "Nr. Sites")
+arrows(c(1,2), c(quantile(csSites$x[,1], probs = 0.2), quantile(rnSites$x[,1], probs = 0.2)),
+       c(1,2), c(quantile(csSites$x[,1], probs = 0.8), quantile(rnSites$x[,1], probs = 0.8)), 
+       angle = 90, length = 0.1, code = 3, lwd = 3, col = c("firebrick", "orange"))
+points(c(1,2), c(quantile(csSites$x[,1], probs = 0.5), quantile(rnSites$x[,1], probs = 0.5)), pch = 16, cex = 2,
+       col = c("firebrick", "orange"))
+axis(1, at = c(1,2), labels = NA)
+
+plot(NA, xlim = c(0.5, 2.5), ylim = c(1,8), xaxt = "n", las = 1, xlab = "", ylab = "Nr. Sites")
+arrows(c(1,2), c(quantile(csSites$x[,2], probs = 0.2), quantile(rnSites$x[,2], probs = 0.2)),
+       c(1,2), c(quantile(csSites$x[,2], probs = 0.8), quantile(rnSites$x[,2], probs = 0.8)), 
+       angle = 90, length = 0.1, code = 3, lwd = 3, col = c("firebrick", "orange"))
+points(c(1,2), c(quantile(csSites$x[,2], probs = 0.5), quantile(rnSites$x[,2], probs = 0.5)), pch = 16, cex = 2,
+       col = c("firebrick", "orange"))
+axis(1, at = c(1,2), labels = c("CurSand", "RNS"))
+
+
+nm <- matrix(0, ncol = 2, nrow = 8)
+  nm[as.numeric(as.character(as.data.frame(table(csSites$x[,1]))$Var)),1] <- table(csSites$x[,1])
+  nm[as.numeric(as.character(as.data.frame(table(rnSites$x[,1]))$Var)),2] <- table(rnSites$x[,1])
+row.names(nm) <- 1:8
+
+sm <- matrix(0, ncol = 2, nrow = 8)
+  sm[as.numeric(as.character(as.data.frame(table(csSites$x[,2]))$Var)),1] <- table(csSites$x[,2])
+  sm[as.numeric(as.character(as.data.frame(table(rnSites$x[,2]))$Var)),2] <- table(rnSites$x[,2])
+row.names(sm) <- 1:8
+
+bp <- barplot(nm[,1], beside = TRUE, horiz = T, col = "firebrick")
+bp <- barplot(sm[,1], beside = TRUE, horiz = T, col = "firebrick")
+
+bp <- barplot(nm[,2], beside = TRUE, horiz = T, col = "orange")
+mtext("Northward migration", 4, cex = 1.4, line = 2)
+bp <- barplot(sm[,2], beside = TRUE, horiz = T, col = "orange")
+mtext("Southward migration", 4, cex = 1.4, line = 2)
+par(opar)
 ```
+
+
