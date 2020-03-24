@@ -3,6 +3,7 @@ output: html_document
 editor_options: 
   chunk_output_type: console
 ---
+
 # Stopover sites {#stops}
 
 ## Stopover locations (time spent)
@@ -89,5 +90,186 @@ crds <- project(as.matrix(subs[,2:3]), proj)
 points(crds, pch = 21, cex = approx(c(0.5, 41), c(0.5, 6), subs$Days)$y, bg = adjustcolor("orange", alpha.f = 0.3), col = "grey70")
 
 par(opar)
+```
 
+## Cluster analysis
+
+```{r, echo=FALSE, fig.show=T, fig.width=15, fig.height=15, message=FALSE, warning=FALSE}
+# plot(map, border = NA, col = "grey70")
+  crds <- as.data.frame(project(as.matrix(tab[,2:3]), proj))
+# points(crds)
+
+sts    <- st_as_sf(crds, coords = c("Lon.50.", "Lat.50."), crs = CRS(proj))
+distM  <- st_distance(sts, sts)
+
+db  <- fpc::dbscan(unclass(distM), eps = 100000, MinPts = 1, method = "dist")
+
+centr <- aggregate(crds, by = list(db$cluster), median)
+tm    <- aggregate(tab$Days, by = list(tab$sp, tab$Type, db$cluster), sum)
+
+
+opar <- par(mfrow = c(2,2), mar = c(0,0,0,0), oma = c(0,2,2,0))
+
+plot(map, border = NA, col = "grey80")
+plot(as(ext_buff, "Spatial"), add = T)
+ss <- subset(tm, Group.1=="cs" & Group.2==1)
+points(centr[ss$Group.3,2:3], pch = 21, bg = adjustcolor("firebrick", alpha.f = 0.5),
+       cex = approx(range(tm$x), c(0.5,6), ss$x)$y)
+mtext("Southward migration", 2, line = 0, cex = 2)
+mtext("Curlew sandpiper", 3, line = 0, cex = 2)
+
+plot(map, border = NA, col = "grey80")
+plot(as(ext_buff, "Spatial"), add = T)
+ss <- subset(tm, Group.1=="rns" & Group.2==1)
+points(centr[ss$Group.3,2:3], pch = 21, bg = adjustcolor("orange", alpha.f = 0.5),
+       cex = approx(range(tm$x), c(0.5,6), ss$x)$y)
+mtext("Red-necked stint", 3, line = 0, cex = 2)
+
+plot(map, border = NA, col = "grey80")
+plot(as(ext_buff, "Spatial"), add = T)
+ss <- subset(tm, Group.1=="cs" & Group.2==3)
+points(centr[ss$Group.3,2:3], pch = 21, bg = adjustcolor("orange", alpha.f = 0.5),
+       cex = approx(range(tm$x), c(0.5,6), ss$x)$y)
+mtext("Southward migration", 2, line = 0, cex = 2)
+
+
+plot(map, border = NA, col = "grey80")
+plot(as(ext_buff, "Spatial"), add = T)
+ss <- subset(tm, Group.1=="rns" & Group.2==3)
+points(centr[ss$Group.3,2:3], pch = 21, bg = adjustcolor("orange", alpha.f = 0.5),
+       cex = approx(range(tm$x), c(0.5,6), ss$x)$y)
+
+
+par(opar)
+```
+
+
+
+## Time spent (MCMC chains)
+
+```{r, echo=FALSE, fig.show=T, fig.width=15, fig.height=15, message=FALSE, warning=FALSE}
+# plot(map, border = NA, col = "orange")
+hexGrid  <- st_make_grid(ext_buff, cellsize = 250000, square = FALSE)
+centGrid <- st_centroid(hexGrid)
+# plot(hexGrid, add = T)
+
+flsCS_sm <- list.files("~/Deakin University/Marcel Klaassen - Klaassen-Lab/Geolocation/Results/CurlewSandpiper", 
+                                                    pattern = "*_Grouped_movementSummary.csv", full.names = T)
+
+flsCS_fit <- list.files("~/Deakin University/Marcel Klaassen - Klaassen-Lab/Geolocation/Results/CurlewSandpiper", 
+                           pattern = "*Group_fit.RData", full.names = T)
+flsCS <- cbind(data.frame(id = unlist(lapply(flsCS_sm, function(x) unlist(strsplit(unlist(strsplit(x, "/"))[9], "_"))[1])),
+                    path = flsCS_sm), path_fit = flsCS_fit[match(
+                      unlist(lapply(flsCS_fit, function(x) unlist(strsplit(unlist(strsplit(x, "/"))[9], "_"))[1])),        
+                      unlist(lapply(flsCS_sm, function(x) unlist(strsplit(unlist(strsplit(x, "/"))[9], "_"))[1])))])
+
+
+mcmcArray <- array(0, dim = c(length(hexGrid), 2, 2))
+
+for(i in 1:nrow(flsCS)) {
+  sm <- read.csv(as.character(flsCS$path[i]))
+  sm$start <- as.numeric(as.POSIXct(sm$StartTime, tz = "GMT"))
+  sm$end   <- as.numeric(as.POSIXct(sm$EndTime, tz = "GMT"))
+  
+  load(as.character(flsCS$path_fit[i]))
+  
+  nmig <- as.numeric(apply(subset(sm, Type==1, select = c("start", "end")), 1, 
+                           function(x) which(fit$model$time>=x[1] & as.numeric(fit$model$time)<=x[2])))
+  smig <- as.numeric(apply(subset(sm, Type==3, select = c("start", "end")), 1, 
+                           function(x) which(fit$model$time>=x[1] & as.numeric(fit$model$time)<=x[2])))
+  
+  nmigCrds <- data.frame(do.call("rbind", lapply(seq(dim(fit$x[[1]])[3]), function(x) fit$x[[1]][nmig,,x])))
+    names(nmigCrds) <- c("lon", "lat")
+    nmigCrds <- subset(nmigCrds, !is.na(lon))
+  nmig_sf  <- st_as_sf(nmigCrds, coords = c("lon", "lat"), crs = CRS(proj4string(land))) %>% st_transform(CRS(proj))
+  
+  smigCrds <- data.frame(do.call("rbind", lapply(seq(dim(fit$x[[1]])[3]), function(x) fit$x[[1]][smig,,x])))
+    names(smigCrds) <- c("lon", "lat")
+    smigCrds <- subset(smigCrds, !is.na(lon))
+  smig_sf  <- st_as_sf(smigCrds, coords = c("lon", "lat"), crs = CRS(proj4string(land))) %>% st_transform(CRS(proj))
+  
+  nmTab <- as.data.frame(table(as.numeric(st_intersects(nmig_sf, hexGrid))))
+  smTab <- as.data.frame(table(as.numeric(st_intersects(smig_sf, hexGrid))))
+    
+  mcmcArray[as.numeric(as.character(nmTab$Var1)),1,1] <- mcmcArray[as.numeric(as.character(nmTab$Var1)),1,1] + nmTab$Freq
+  mcmcArray[as.numeric(as.character(smTab$Var1)),2,1] <- mcmcArray[as.numeric(as.character(smTab$Var1)),2,1] + smTab$Freq
+}
+
+
+flsRNS_sm <- list.files("~/Deakin University/Marcel Klaassen - Klaassen-Lab/Geolocation/Results/RedNeckedStint/", 
+                                                    pattern = "*_Grouped_movementSummary.csv", full.names = T)
+
+flsRNS_fit <- list.files("~/Deakin University/Marcel Klaassen - Klaassen-Lab/Geolocation/Results/RedNeckedStint", 
+                           pattern = "*Group_fit.RData", full.names = T)
+flsRNS <- cbind(data.frame(id = unlist(lapply(flsRNS_sm, function(x) unlist(strsplit(unlist(strsplit(x, "/"))[10], "_"))[1])), path = flsRNS_sm), 
+                           path_fit = flsRNS_fit[match(
+                              unlist(lapply(flsRNS_fit, function(x) unlist(strsplit(unlist(strsplit(x, "/"))[9], "_"))[1])),        
+                              unlist(lapply(flsRNS_sm, function(x) unlist(strsplit(unlist(strsplit(x, "/"))[10], "_"))[1])))])
+
+
+for(i in 1:nrow(flsRNS)) {
+  sm <- read.csv(as.character(flsRNS$path[i]))
+  sm$start <- as.numeric(as.POSIXct(sm$StartTime, tz = "GMT"))
+  sm$end   <- as.numeric(as.POSIXct(sm$EndTime, tz = "GMT"))
+  
+  load(as.character(flsRNS$path_fit[i]))
+  
+  nmig <- as.numeric(apply(subset(sm, Type==1, select = c("start", "end")), 1, 
+                           function(x) which(fit$model$time>=x[1] & fit$model$time<=x[2])))
+  smig <- as.numeric(apply(subset(sm, Type==3, select = c("start", "end")), 1, 
+                           function(x) which(fit$model$time>=x[1] & as.numeric(fit$model$time)<=x[2])))
+  
+  nmigCrds <- data.frame(do.call("rbind", lapply(seq(dim(fit$x[[1]])[3]), function(x) fit$x[[1]][nmig,,x])))
+    names(nmigCrds) <- c("lon", "lat")
+    nmigCrds <- subset(nmigCrds, !is.na(lon))
+  nmig_sf  <- st_as_sf(nmigCrds, coords = c("lon", "lat"), crs = CRS(proj4string(land))) %>% st_transform(CRS(proj))
+  
+  smigCrds <- data.frame(do.call("rbind", lapply(seq(dim(fit$x[[1]])[3]), function(x) fit$x[[1]][smig,,x])))
+    names(smigCrds) <- c("lon", "lat")
+    smigCrds <- subset(smigCrds, !is.na(lon))
+  smig_sf  <- st_as_sf(smigCrds, coords = c("lon", "lat"), crs = CRS(proj4string(land))) %>% st_transform(CRS(proj))
+  
+  nmTab <- as.data.frame(table(as.numeric(st_intersects(nmig_sf, hexGrid))))
+  smTab <- as.data.frame(table(as.numeric(st_intersects(smig_sf, hexGrid))))
+    
+  mcmcArray[as.numeric(as.character(nmTab$Var1)),1,2] <- mcmcArray[as.numeric(as.character(nmTab$Var1)),1,2] + nmTab$Freq
+  mcmcArray[as.numeric(as.character(smTab$Var1)),2,2] <- mcmcArray[as.numeric(as.character(smTab$Var1)),2,2] + smTab$Freq
+}
+
+
+opar <- par(mfrow = c(2,2), mar = c(0,0,0,0), oma = c(0,2,2,0))
+
+plot(map, border = NA, col = "grey80")
+plot(as(ext_buff, "Spatial"), add = T)
+
+plot(as(hexGrid, "Spatial"), border = NA, add = T,
+     col = c("transparent", rev(terrain.colors(99)))[cut(mcmcArray[,1,1], seq(min(mcmcArray)-1, max(mcmcArray)+1, length = 99), labels = FALSE)])
+plot(map, border = "grey40", col = NA, add = T)
+mtext("Curlew sandpiper", 3, line = 0, cex = 2)
+mtext("Northward migration", 2, line = 0, cex = 2)
+
+plot(map, border = NA, col = "grey80")
+plot(as(ext_buff, "Spatial"), add = T)
+
+plot(as(hexGrid, "Spatial"), border = NA, add = T,
+     col = c("transparent", rev(terrain.colors(99)))[cut(mcmcArray[,1,2], seq(min(mcmcArray)-1, max(mcmcArray)+1, length = 99), labels = FALSE)])
+plot(map, border = "grey40", col = NA, add = T)
+mtext("Red-necked stint", 3, line = 0, cex = 2)
+
+plot(map, border = NA, col = "grey80")
+plot(as(ext_buff, "Spatial"), add = T)
+
+plot(as(hexGrid, "Spatial"), border = NA, add = T,
+     col = c("transparent", rev(terrain.colors(99)))[cut(mcmcArray[,2,1], seq(min(mcmcArray)-1, max(mcmcArray)+1, length = 99), labels = FALSE)])
+plot(map, border = "grey40", col = NA, add = T)
+mtext("Southward migration", 2, line = 0, cex = 2)
+
+plot(map, border = NA, col = "grey80")
+plot(as(ext_buff, "Spatial"), add = T)
+
+plot(as(hexGrid, "Spatial"), border = NA, add = T,
+     col = c("transparent", rev(terrain.colors(99)))[cut(mcmcArray[,2,2], seq(min(mcmcArray)-1, max(mcmcArray)+1, length = 99), labels = FALSE)])
+plot(map, border = "grey40", col = NA, add = T)
+
+par(opar)
 ```
