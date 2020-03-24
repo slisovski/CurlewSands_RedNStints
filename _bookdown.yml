@@ -3,3 +3,6 @@ language:
   ui:
     chapter_name: ""
 delete_merged_file: true
+before_chapter_script: "Common.R"
+output_dir: "docs"
+new_session: yes
