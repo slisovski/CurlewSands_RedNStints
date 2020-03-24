@@ -1,4 +1,3 @@
-
 --- 
 title: "Migration pattern and consequences of Curlew Sandpipers and Red-necked stints in the EAAF"
 date: "Last edited on 2020-03-24"

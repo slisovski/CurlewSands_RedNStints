@@ -1,4 +1,3 @@
-
 # Simuations {#sim}
 
 Red = Curlew sandpiper; Orange = Red-necked stint

@@ -1,10 +1,9 @@
-
 # Tag info {#tags}
 
 ## Curlew sandpiper
 
 
-Table: (\#tab:unnamed-chunk-2)Table 1: Succesfully tracked Curlew sandpipers.
+Table: (\#tab:unnamed-chunk-1)Table 1: Succesfully tracked Curlew sandpipers.
 
 Flag   GeoID     Species           Location              Year  Depart1   Arrival1   Depart2   Arrival2 
 -----  --------  ----------------  -------------------  -----  --------  ---------  --------  ---------
@@ -26,7 +25,7 @@ JBT    BQ884     Curew Sandpiper   NA                    2019  03-17     05-29  
 ## Red-necked stint
 
 
-Table: (\#tab:unnamed-chunk-3)Table 2: Succesfully tracked Red-necked stints.
+Table: (\#tab:unnamed-chunk-2)Table 2: Succesfully tracked Red-necked stints.
 
 Flag   GeoID   Species            Location              Year  Depart1   Arrival1   Depart2   Arrival2 
 -----  ------  -----------------  -------------------  -----  --------  ---------  --------  ---------

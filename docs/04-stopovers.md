@@ -1,4 +1,3 @@
-
 ---
 output: html_document
 editor_options: 
@@ -10,4 +9,4 @@ editor_options:
 
 
 
-<img src="04-stopovers_files/figure-html/unnamed-chunk-3-1.png" width="1440" />
+<img src="04-stopovers_files/figure-html/unnamed-chunk-2-1.png" width="1440" />
