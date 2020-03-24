@@ -1,0 +1,10 @@
+# Migration strategy {#strategy}
+
+Plan:
+* bout length
+* staging time distribution
+* nr. stoppover sites
+
+```{r}
+
+```
